@@ -381,6 +381,50 @@ with st.sidebar:
     st.caption("MODEL")
     st.write("CFB Model V1.2")
     st.caption("282 frozen features")
+
+    # ============================================================
+    # V1.2 PREDICTION SUPPORT GUARD
+    # ============================================================
+    #
+    # Games outside the frozen V1.1-supported team universe
+    # intentionally have no model prediction. Do not convert their
+    # missing prediction fields to floats or create synthetic values.
+
+    if "hasFrozenV11Prediction" not in game.index:
+        st.error(
+            "Prediction-support metadata is missing for this matchup."
+        )
+        st.stop()
+
+    has_prediction = bool(
+        game["hasFrozenV11Prediction"]
+    )
+
+    if not has_prediction:
+
+        st.warning(
+            "This matchup is on the Week 5 board, but it is outside "
+            "the frozen V1.1-supported team universe."
+        )
+
+        st.info(
+            "V1.2 intentionally does not generate a prediction for "
+            "this game. No projected score, winner, margin, or total "
+            "is available."
+        )
+
+        if "predictionMode" in game.index:
+            st.caption(
+                f"Prediction mode: "
+                f"{game['predictionMode']}"
+            )
+
+        st.caption(
+            "Production status: UNSUPPORTED"
+        )
+
+        st.stop()
+
     st.success("Production ready")
 
     if "predictionMode" in game.index:
