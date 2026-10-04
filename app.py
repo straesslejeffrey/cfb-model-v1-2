@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import json
 import pandas as pd
@@ -95,7 +94,7 @@ def team_logo(team, style="Retro"):
 # DATA
 # ============================================================
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_predictions():
 
     if not DATA_PATH.exists():
@@ -385,10 +384,6 @@ with st.sidebar:
     # ============================================================
     # V1.2 PREDICTION SUPPORT GUARD
     # ============================================================
-    #
-    # Games outside the frozen V1.1-supported team universe
-    # intentionally have no model prediction. Do not convert their
-    # missing prediction fields to floats or create synthetic values.
 
     if "hasFrozenV11Prediction" not in game.index:
         st.error(
@@ -403,7 +398,7 @@ with st.sidebar:
     if not has_prediction:
 
         st.warning(
-            "This matchup is on the Week 5 board, but it is outside "
+            f"This matchup is on the Week {selected_week} board, but it is outside "
             "the frozen V1.1-supported team universe."
         )
 
