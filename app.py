@@ -365,9 +365,10 @@ with col2:
             f"{team_b} by {abs(margin):.1f}"
         )
 
-    st.metric(
-        "V1.2 Margin",
-        margin_text,
+    st.markdown("**V1.2 Margin**")
+
+    st.markdown(
+        f"### {margin_text}"
     )
 
 with col3:
@@ -452,9 +453,14 @@ if (
             win_team = team_b
             win_prob = p_b
 
-        st.metric(
-            "Model Win Probability",
-            f"{win_team} {win_prob:.1%}",
+        st.markdown("**Model Win Probability**")
+
+        st.markdown(
+            f"### {win_team}"
+        )
+
+        st.markdown(
+            f"## {win_prob:.1%}"
         )
 
     # ----------------------------------------------------------------------------------------------
