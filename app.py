@@ -14,6 +14,7 @@ st.set_page_config(
 )
 
 st.title("CFB Model V1.2")
+
 st.caption(
     "Frozen V1.2 production predictions with Week 7 betting calibration overlay"
 )
@@ -39,7 +40,7 @@ OVERLAY_DATA_PATH = (
 )
 
 # ==================================================================================================
-# LOADERS
+# LOAD DATA
 # ==================================================================================================
 
 @st.cache_data(ttl=60)
@@ -66,7 +67,8 @@ def load_base_predictions():
     ]
 
     missing = [
-        c for c in required
+        c
+        for c in required
         if c not in df.columns
     ]
 
@@ -94,10 +96,14 @@ base = load_base_predictions()
 overlay = load_betting_overlay()
 
 # ==================================================================================================
-# SIDEBAR
+# SIDEBAR FILTERS
 # ==================================================================================================
 
 st.sidebar.header("Filters")
+
+# --------------------------------------------------------------------------------------------------
+# SEASON
+# --------------------------------------------------------------------------------------------------
 
 season_options = sorted(
     pd.to_numeric(
@@ -126,6 +132,10 @@ season_df = base[
     selected_season
 ].copy()
 
+# --------------------------------------------------------------------------------------------------
+# WEEK
+# --------------------------------------------------------------------------------------------------
+
 week_options = sorted(
     pd.to_numeric(
         season_df["week"],
@@ -153,8 +163,50 @@ week_df = season_df[
     selected_week
 ].copy()
 
+week_game_count = len(
+    week_df
+)
+
+# --------------------------------------------------------------------------------------------------
+# GAME SELECTOR
+# --------------------------------------------------------------------------------------------------
+
+week_df["gameLabel"] = (
+    week_df["teamA"].astype(str)
+    +
+    " vs "
+    +
+    week_df["teamB"].astype(str)
+)
+
+game_options = (
+    week_df[
+        "gameLabel"
+    ]
+    .sort_values()
+    .tolist()
+)
+
+selected_game = st.sidebar.selectbox(
+    "Game",
+    game_options,
+    index=0,
+)
+
+selected_df = week_df[
+    week_df["gameLabel"]
+    ==
+    selected_game
+].copy()
+
+if len(selected_df) != 1:
+
+    raise RuntimeError(
+        f"Expected exactly one selected game, found {len(selected_df)}."
+    )
+
 # ==================================================================================================
-# MERGE OVERLAY
+# MERGE BETTING OVERLAY FOR SELECTED GAME
 # ==================================================================================================
 
 if not overlay.empty:
@@ -205,11 +257,12 @@ if not overlay.empty:
         ]
 
         overlay_keep = [
-            c for c in overlay_keep
+            c
+            for c in overlay_keep
             if c in overlay_week.columns
         ]
 
-        week_df = week_df.merge(
+        selected_df = selected_df.merge(
             overlay_week[
                 overlay_keep
             ],
@@ -219,7 +272,7 @@ if not overlay.empty:
         )
 
 # ==================================================================================================
-# HEADER
+# PAGE HEADER
 # ==================================================================================================
 
 st.subheader(
@@ -227,14 +280,14 @@ st.subheader(
 )
 
 st.write(
-    f"{len(week_df)} games"
+    f"{week_game_count} games available"
 )
 
 overlay_available = (
     "calibratedTotal"
-    in week_df.columns
+    in selected_df.columns
     and
-    week_df["calibratedTotal"]
+    selected_df["calibratedTotal"]
     .notna()
     .any()
 )
@@ -249,313 +302,419 @@ else:
 
     st.info(
         "Base V1.2 production predictions are shown. "
-        "No betting calibration overlay is available for this week."
+        "No betting calibration overlay is available for this matchup."
     )
 
 # ==================================================================================================
-# GAME CARDS
+# SELECTED GAME
 # ==================================================================================================
 
-for _, row in week_df.iterrows():
+row = selected_df.iloc[0]
 
-    team_a = str(
-        row["teamA"]
+team_a = str(
+    row["teamA"]
+)
+
+team_b = str(
+    row["teamB"]
+)
+
+st.markdown("---")
+
+st.markdown(
+    f"## {team_a} vs {team_b}"
+)
+
+# ==================================================================================================
+# BASE V1.2 OUTPUT
+# ==================================================================================================
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+
+    st.metric(
+        "V1.2 Projected Score",
+        (
+            f"{row['projectedTeamAScore']:.1f} - "
+            f"{row['projectedTeamBScore']:.1f}"
+        ),
     )
 
-    team_b = str(
-        row["teamB"]
+    st.caption(
+        f"{team_a} vs {team_b}"
     )
 
-    st.markdown("---")
+with col2:
+
+    margin = float(
+        row[
+            "predictedMarginTeamA"
+        ]
+    )
+
+    if margin >= 0:
+
+        margin_text = (
+            f"{team_a} by {margin:.1f}"
+        )
+
+    else:
+
+        margin_text = (
+            f"{team_b} by {abs(margin):.1f}"
+        )
+
+    st.metric(
+        "V1.2 Margin",
+        margin_text,
+    )
+
+with col3:
+
+    st.metric(
+        "Raw V1.2 Total",
+        f"{row['predictedTotal']:.1f}",
+    )
+
+with col4:
+
+    st.metric(
+        "Projected Winner",
+        str(
+            row[
+                "projectedWinner"
+            ]
+        ),
+    )
+
+# ==================================================================================================
+# BETTING CALIBRATION OVERLAY
+# ==================================================================================================
+
+if (
+    overlay_available
+    and
+    pd.notna(
+        row.get(
+            "calibratedTotal",
+            np.nan,
+        )
+    )
+):
 
     st.markdown(
-        f"### {team_a} vs {team_b}"
+        "### Betting Calibration Overlay"
     )
 
-    col1, col2, col3, col4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
-    with col1:
+    # ----------------------------------------------------------------------------------------------
+    # CALIBRATED TOTAL
+    # ----------------------------------------------------------------------------------------------
+
+    with c1:
 
         st.metric(
-            "V1.2 Projected Score",
-            (
-                f"{row['projectedTeamAScore']:.1f} - "
-                f"{row['projectedTeamBScore']:.1f}"
+            "Calibrated Total",
+            f"{row['calibratedTotal']:.1f}",
+            delta=(
+                f"{row['calibratedTotal'] - row['predictedTotal']:+.1f}"
+                " vs raw"
             ),
         )
 
-        st.caption(
-            f"{team_a} vs {team_b}"
-        )
+    # ----------------------------------------------------------------------------------------------
+    # WIN PROBABILITY
+    # ----------------------------------------------------------------------------------------------
 
-    with col2:
+    with c2:
 
-        margin = float(
+        p_a = float(
             row[
-                "predictedMarginTeamA"
+                "teamAWinProbability"
             ]
         )
 
-        if margin >= 0:
-            margin_text = (
-                f"{team_a} by {margin:.1f}"
-            )
+        p_b = float(
+            row[
+                "teamBWinProbability"
+            ]
+        )
+
+        if p_a >= p_b:
+
+            win_team = team_a
+            win_prob = p_a
+
         else:
-            margin_text = (
-                f"{team_b} by {abs(margin):.1f}"
+
+            win_team = team_b
+            win_prob = p_b
+
+        st.metric(
+            "Model Win Probability",
+            f"{win_team} {win_prob:.1%}",
+        )
+
+    # ----------------------------------------------------------------------------------------------
+    # ATS SIDE
+    # ----------------------------------------------------------------------------------------------
+
+    with c3:
+
+        spread_play = row.get(
+            "modelSpreadPlay",
+            "",
+        )
+
+        if (
+            pd.isna(spread_play)
+            or
+            str(spread_play).strip()
+            ==
+            ""
+        ):
+
+            spread_play = (
+                "No market line"
             )
 
         st.metric(
-            "V1.2 Margin",
-            margin_text,
-        )
-
-    with col3:
-
-        st.metric(
-            "Raw V1.2 Total",
-            f"{row['predictedTotal']:.1f}",
-        )
-
-    with col4:
-
-        st.metric(
-            "Projected Winner",
-            str(
-                row[
-                    "projectedWinner"
-                ]
-            ),
+            "Model ATS Side",
+            spread_play,
         )
 
     # ----------------------------------------------------------------------------------------------
-    # BETTING OVERLAY
+    # TOTAL EDGE
     # ----------------------------------------------------------------------------------------------
+
+    with c4:
+
+        total_side = row.get(
+            "totalSide",
+            "",
+        )
+
+        total_edge = row.get(
+            "calibratedTotalEdge",
+            np.nan,
+        )
+
+        if pd.notna(
+            total_edge
+        ):
+
+            total_text = (
+                f"{total_side} "
+                f"{abs(float(total_edge)):.1f} pts"
+            )
+
+        else:
+
+            total_text = (
+                "No market line"
+            )
+
+        st.metric(
+            "Total Edge",
+            total_text,
+        )
+
+    # ==================================================================================================
+    # CALIBRATED SCORE
+    # ==================================================================================================
 
     if (
-        overlay_available
+        pd.notna(
+            row.get(
+                "calibratedTeamAScore",
+                np.nan,
+            )
+        )
         and
         pd.notna(
             row.get(
-                "calibratedTotal",
+                "calibratedTeamBScore",
                 np.nan,
             )
         )
     ):
 
-        st.markdown(
-            "#### Betting Calibration Overlay"
+        st.write(
+            "**Calibrated projected score:** "
+            f"{team_a} {row['calibratedTeamAScore']:.1f} — "
+            f"{team_b} {row['calibratedTeamBScore']:.1f}"
         )
 
-        c1, c2, c3, c4 = st.columns(4)
+    # ==================================================================================================
+    # MARKET COMPARISON
+    # ==================================================================================================
 
-        with c1:
+    st.markdown(
+        "#### Market Comparison"
+    )
 
-            st.metric(
-                "Calibrated Total",
-                f"{row['calibratedTotal']:.1f}",
-                delta=(
-                    f"{row['calibratedTotal'] - row['predictedTotal']:+.1f}"
-                    " vs raw"
-                ),
-            )
+    market_cols = st.columns(4)
 
-        with c2:
+    with market_cols[0]:
 
-            p_a = float(
-                row[
-                    "teamAWinProbability"
-                ]
-            )
-
-            p_b = float(
-                row[
-                    "teamBWinProbability"
-                ]
-            )
-
-            if p_a >= p_b:
-                win_team = team_a
-                win_prob = p_a
-            else:
-                win_team = team_b
-                win_prob = p_b
-
-            st.metric(
-                "Model Win Probability",
-                f"{win_team} {win_prob:.1%}",
-            )
-
-        with c3:
-
-            spread_play = row.get(
-                "modelSpreadPlay",
-                "",
-            )
-
-            if (
-                pd.isna(spread_play)
-                or
-                spread_play == ""
-            ):
-                spread_play = "No market line"
-
-            st.metric(
-                "Model ATS Side",
-                spread_play,
-            )
-
-        with c4:
-
-            total_side = row.get(
-                "totalSide",
-                "",
-            )
-
-            total_edge = row.get(
-                "calibratedTotalEdge",
-                np.nan,
-            )
-
-            if pd.notna(total_edge):
-
-                total_text = (
-                    f"{total_side} "
-                    f"{abs(float(total_edge)):.1f} pts"
-                )
-
-            else:
-                total_text = "No market line"
-
-            st.metric(
-                "Total Edge",
-                total_text,
-            )
-
-        # ------------------------------------------------------------------------------------------
-        # MARKET
-        # ------------------------------------------------------------------------------------------
-
-        st.markdown(
-            "##### Market Comparison"
-        )
-
-        market_cols = st.columns(4)
-
-        with market_cols[0]:
-
-            spread = row.get(
-                "marketHomeSpread",
-                np.nan,
-            )
-
-            if pd.notna(spread):
-                st.write(
-                    f"**{team_a} spread:** {float(spread):+.1f}"
-                )
-            else:
-                st.write(
-                    "**Spread:** unavailable"
-                )
-
-        with market_cols[1]:
-
-            market_total = row.get(
-                "marketTotal",
-                np.nan,
-            )
-
-            if pd.notna(market_total):
-                st.write(
-                    f"**Market total:** {float(market_total):.1f}"
-                )
-            else:
-                st.write(
-                    "**Market total:** unavailable"
-                )
-
-        with market_cols[2]:
-
-            team_a_ml = row.get(
-                "teamAML",
-                np.nan,
-            )
-
-            if pd.notna(team_a_ml):
-                st.write(
-                    f"**{team_a} ML:** {float(team_a_ml):+.0f}"
-                )
-            else:
-                st.write(
-                    f"**{team_a} ML:** unavailable"
-                )
-
-        with market_cols[3]:
-
-            team_b_ml = row.get(
-                "teamBML",
-                np.nan,
-            )
-
-            if pd.notna(team_b_ml):
-                st.write(
-                    f"**{team_b} ML:** {float(team_b_ml):+.0f}"
-                )
-            else:
-                st.write(
-                    f"**{team_b} ML:** unavailable"
-                )
-
-        # ------------------------------------------------------------------------------------------
-        # MONEYLINE EDGE
-        # ------------------------------------------------------------------------------------------
-
-        ml_side = row.get(
-            "moneylineEdgeSide",
-            "",
-        )
-
-        ml_edge = row.get(
-            "moneylineProbabilityEdge",
+        spread = row.get(
+            "marketHomeSpread",
             np.nan,
         )
 
-        ml_ev = row.get(
-            "moneylineEVPercent",
+        if pd.notna(spread):
+
+            st.write(
+                f"**{team_a} spread:** "
+                f"{float(spread):+.1f}"
+            )
+
+        else:
+
+            st.write(
+                "**Spread:** unavailable"
+            )
+
+    with market_cols[1]:
+
+        market_total = row.get(
+            "marketTotal",
             np.nan,
         )
 
-        if (
-            pd.notna(ml_edge)
-            and
-            ml_side
+        if pd.notna(
+            market_total
         ):
 
             st.write(
-                f"**Moneyline model edge:** "
-                f"{ml_side} | "
-                f"{float(ml_edge):+.1%} probability edge | "
-                f"{float(ml_ev):+.1f}% model EV"
+                f"**Market total:** "
+                f"{float(market_total):.1f}"
             )
 
-        # ------------------------------------------------------------------------------------------
-        # CONTEXT WARNING
-        # ------------------------------------------------------------------------------------------
+        else:
 
-        injury_flag = bool(
-            row.get(
-                "injuryReviewFlag",
-                False,
+            st.write(
+                "**Market total:** unavailable"
             )
+
+    with market_cols[2]:
+
+        team_a_ml = row.get(
+            "teamAML",
+            np.nan,
         )
 
-        if injury_flag:
+        if pd.notna(
+            team_a_ml
+        ):
 
-            st.warning(
-                "Injury review recommended before using this matchup."
+            st.write(
+                f"**{team_a} ML:** "
+                f"{float(team_a_ml):+.0f}"
             )
 
-        st.caption(
-            "Betting overlay is a model-vs-market comparison tool, "
-            "not a guarantee of a winning wager."
+        else:
+
+            st.write(
+                f"**{team_a} ML:** unavailable"
+            )
+
+    with market_cols[3]:
+
+        team_b_ml = row.get(
+            "teamBML",
+            np.nan,
         )
+
+        if pd.notna(
+            team_b_ml
+        ):
+
+            st.write(
+                f"**{team_b} ML:** "
+                f"{float(team_b_ml):+.0f}"
+            )
+
+        else:
+
+            st.write(
+                f"**{team_b} ML:** unavailable"
+            )
+
+    # ==================================================================================================
+    # MONEYLINE EDGE
+    # ==================================================================================================
+
+    ml_side = row.get(
+        "moneylineEdgeSide",
+        "",
+    )
+
+    ml_edge = row.get(
+        "moneylineProbabilityEdge",
+        np.nan,
+    )
+
+    ml_ev = row.get(
+        "moneylineEVPercent",
+        np.nan,
+    )
+
+    if (
+        pd.notna(
+            ml_edge
+        )
+        and
+        str(
+            ml_side
+        ).strip()
+        !=
+        ""
+    ):
+
+        st.write(
+            f"**Moneyline model edge:** "
+            f"{ml_side} | "
+            f"{float(ml_edge):+.1%} probability edge | "
+            f"{float(ml_ev):+.1f}% model EV"
+        )
+
+    # ==================================================================================================
+    # INJURY FLAG
+    # ==================================================================================================
+
+    injury_flag = row.get(
+        "injuryReviewFlag",
+        False,
+    )
+
+    if isinstance(
+        injury_flag,
+        str,
+    ):
+
+        injury_flag = (
+            injury_flag
+            .strip()
+            .lower()
+            in [
+                "true",
+                "1",
+                "yes",
+            ]
+        )
+
+    if bool(
+        injury_flag
+    ):
+
+        st.warning(
+            "Injury review recommended before using this matchup."
+        )
+
+    st.caption(
+        "Betting overlay is a model-vs-market comparison tool, "
+        "not a guarantee of a winning wager."
+    )
