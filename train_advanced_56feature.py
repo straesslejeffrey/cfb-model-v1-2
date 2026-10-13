@@ -22,11 +22,11 @@ def _model(alpha):
                          StandardScaler(),Ridge(alpha=alpha))
 
 def train(historical, current, destination, train_end=2023, validation_year=2024, test_year=2025):
+    if not train_end < validation_year < test_year:
+        raise ValueError("Chronological split required")
     required=["season","week","actualTotal","frozenV12Total"]
     for col in required:
         if col not in historical: raise ValueError(f"Historical target missing: {col}")
-    if not train_end < validation_year < test_year:
-        raise ValueError("Chronological split required")
     hx=historical_features(historical).replace([np.inf,-np.inf],np.nan).astype(float)
     if list(hx.columns)!=FEATURE_NAMES: raise ValueError("Feature order drift")
     residual=pd.to_numeric(historical.actualTotal)-pd.to_numeric(historical.frozenV12Total)
