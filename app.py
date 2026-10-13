@@ -796,3 +796,45 @@ with st.expander("Advanced matchup research — 2025 season priors (not part of 
                 "NOT calibrated matchup advantages or point adjustments. "
                 "Their direction and importance depend on each statistic's definition."
             )
+
+# --------------------------------------------------------------------------
+# V1.2 Advanced — current-season research evidence (not a trained score)
+# --------------------------------------------------------------------------
+CURRENT_ADVANCED_PATH = APP_DIR / "v1_2" / "data" / "advanced_2026_week7_research_inputs.csv"
+@st.cache_data(ttl=60)
+def load_current_advanced():
+    if not CURRENT_ADVANCED_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(CURRENT_ADVANCED_PATH, low_memory=False)
+
+with st.expander("V1.2 Advanced | Verified 2026 team trends (research)", expanded=False):
+    st.caption("Current 2026 prior games: last 3 and last 5 completed games. "
+               "These metrics are NOT yet used to modify V1.2 score predictions.")
+    advanced = load_current_advanced()
+    selected = advanced.loc[
+        (advanced["gameId"].astype(str) == str(row["gameId"])) &
+        (advanced["season"] == selected_season) &
+        (advanced["week"] == selected_week)
+    ] if not advanced.empty else pd.DataFrame()
+    if len(selected) != 1:
+        st.info("Current-season advanced statistics unavailable for this game.")
+    else:
+        ar = selected.iloc[0]
+        metrics = [
+            ("Points per drive", "offPointsPerDrive"),
+            ("PPA per play", "offPPAperPlay"),
+            ("Success rate", "offSuccessRate"),
+            ("Scoring opportunity rate", "offScoringOpportunityRate"),
+            ("Explosive drive rate", "offExplosiveDriveRate"),
+            ("Defensive PPA allowed", "defPPAperPlayAllowed"),
+            ("Defensive success allowed", "defSuccessRateAllowed"),
+        ]
+        view = []
+        for label, metric in metrics:
+            rec = {"Measure": label}
+            for side, team in [("teamA",team_a),("teamB",team_b)]:
+                rec[f"{team} L3"] = ar.get(f"{side}_2026_{metric}_last3")
+                rec[f"{team} L5"] = ar.get(f"{side}_2026_{metric}_last5")
+            view.append(rec)
+        st.dataframe(pd.DataFrame(view).round(3), hide_index=True, use_container_width=True)
+        st.caption("Research view only: archived V1.2/V1.3 prediction outputs remain unchanged.")
