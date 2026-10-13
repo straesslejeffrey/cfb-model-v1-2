@@ -17,6 +17,7 @@ on:
       - 'validate_2026_training_inputs.py'
       - 'align_advanced_feature_contract.py'
       - 'train_advanced_56feature.py'
+      - 'research_2025_fitted_totals.py'
       - 'gate_historical_v12_baseline.py'
       - 'test_gate_historical_v12_baseline.py'
       - 'test_train_advanced_56feature.py'
