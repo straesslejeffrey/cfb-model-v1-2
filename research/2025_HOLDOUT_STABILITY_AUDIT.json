@@ -1,0 +1,34 @@
+{
+  "n_games": 185,
+  "baseline_mae": 13.055643308013305,
+  "challenger_mae": 12.855393075167944,
+  "gain": 0.2002502328453622,
+  "bootstrap_95pct_interval_for_gain": [
+    -0.35827071074000855,
+    0.7389141980168229
+  ],
+  "improved_games": 103,
+  "worsened_games": 82,
+  "by_week": [
+    {
+      "week": 12,
+      "games": 58,
+      "baseline_mae": 12.076331568431568,
+      "candidate_mae": 11.349964617870933
+    },
+    {
+      "week": 13,
+      "games": 60,
+      "baseline_mae": 14.357017322029824,
+      "candidate_mae": 14.165648596305566
+    },
+    {
+      "week": 14,
+      "games": 67,
+      "baseline_mae": 12.737996144651369,
+      "candidate_mae": 12.985236646137635
+    }
+  ],
+  "promotion": "BLOCKED",
+  "reason": "uncertainty interval crosses zero, Week 14 regression, independent cross-season validation absent"
+}
