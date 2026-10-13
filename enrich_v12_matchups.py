@@ -8,7 +8,7 @@ Output: enriched matchup CSV. Does NOT modify original scores or claim retrainin
 import argparse
 from pathlib import Path
 import pandas as pd
-from advanced_features import build_matchup_features
+from advanced_features import build_matchup_features, build_current_team_features, METRICS
 
 PAIRINGS = {
   "rush_success": ("rushSuccessRate", "defRushSuccessRateAllowed"),
@@ -64,10 +64,25 @@ def enrich(predictions: pd.DataFrame, snapshots: pd.DataFrame, min_coverage=.90)
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--predictions",required=True)
-    p.add_argument("--snapshots",required=True)
+    source=p.add_mutually_exclusive_group(required=True)
+    source.add_argument("--snapshots",help="Snapshots already containing the scheduled games")
+    source.add_argument("--team-games",help="Completed raw team-games; construct strictly pregame snapshots")
     p.add_argument("--out",default="local_advanced_data/advanced_matchups.csv")
     args=p.parse_args()
-    result=enrich(pd.read_csv(args.predictions),pd.read_csv(args.snapshots))
+    predictions=pd.read_csv(args.predictions)
+    if args.snapshots:
+        snapshots=pd.read_csv(args.snapshots)
+    else:
+        games=pd.read_csv(args.team_games)
+        from ingest_cfbd import ADV_FIELDS, HAVOC_FIELDS
+        for metric in list(ADV_FIELDS)+list(HAVOC_FIELDS):
+            if metric not in METRICS: METRICS.append(metric)
+        schedule=predictions[["season","week","gameId","teamA","teamB"]]
+        home=schedule.rename(columns={"teamA":"team","teamB":"opponent"})
+        away=schedule.rename(columns={"teamB":"team","teamA":"opponent"})
+        upcoming=pd.concat([home,away],ignore_index=True)
+        snapshots=build_current_team_features(games,upcoming)
+    result=enrich(predictions,snapshots)
     out=Path(args.out);out.parent.mkdir(parents=True,exist_ok=True)
     result.to_csv(out,index=False)
     print(f"{len(result)} games; {int(result.advancedDataReady.sum())} evidence-ready; output {out}")
