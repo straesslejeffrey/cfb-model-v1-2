@@ -9,8 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 FAMILIES = (
-    "pregame", "matchup", "interaction", "gameDiff", "gameEnvironment",
-    "gameMatchupAdvantage",
+    "pregame",
 )
 UNSAFE = ("actual", "final", "target", "label", "postgame", "result")
 JOIN = ["season", "gameId"]
@@ -45,15 +44,14 @@ def add_advanced_context(predictions, matrix, min_coverage=0.65):
     # home_offPointsPerDrive. These are excluded: only pregame-qualified
     # feature names are eligible for this bridge.
     eligible = [c for c in eligible if (
-        c.startswith(("home_pregame", "away_pregame", "home_opp_pregame",
-                      "away_opp_pregame", "home_matchup", "away_matchup",
-                      "home_interaction", "away_interaction", "gameDiff_",
-                      "gameEnvironment_", "gameMatchupAdvantage_"))
+        c.startswith(("home_pregame_", "away_pregame_", "home_opp_pregame_",
+                      "away_opp_pregame_"))
     )]
     if not eligible: raise ValueError("No supported pregame-qualified fields")
     incoming = matrix[IDENTITY + ["homeTeam", "awayTeam"] + eligible].copy()
     incoming = incoming.rename(columns={x: "advanced_" + x for x in eligible})
     result = predictions.merge(incoming, on=JOIN, how="left", validate="one_to_one", suffixes=("", "_source"))
+    # TeamA is not guaranteed to mean home in all exports. Require exact orientation.
     match = (result["week"] == result["week_source"])
     match &= (result.teamA == result.homeTeam) & (result.teamB == result.awayTeam)
     evidence_cols = ["advanced_" + c for c in eligible]
@@ -63,6 +61,7 @@ def add_advanced_context(predictions, matrix, min_coverage=0.65):
     result["advanced2026FeatureCoverage"] = result[evidence_cols].notna().mean(axis=1)
     result["advanced2026Ready"] = result.advanced2026IdentityMatch & (
         result.advanced2026FeatureCoverage >= min_coverage)
+    result["advanced2026SelectionPolicy"] = "STRICT_PREGAME_PREFIX_ONLY"
     result["advanced2026Source"] = "V1_3_GAME_LEVEL_MATCHUP_MATRIX_2026 - PREGAME ONLY"
     result["advanced2026Status"] = result.advanced2026Ready.map({
         True: "PREGAME ADVANCED EVIDENCE - NOT YET IN V1.2 SCORING",
