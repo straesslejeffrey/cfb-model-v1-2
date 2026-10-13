@@ -838,3 +838,26 @@ with st.expander("V1.2 Advanced | Verified 2026 team trends (research)", expande
             view.append(rec)
         st.dataframe(pd.DataFrame(view).round(3), hide_index=True, use_container_width=True)
         st.caption("Research view only: archived V1.2/V1.3 prediction outputs remain unchanged.")
+
+# 2025-trained research-only model output. Deliberately not a default score.
+with st.expander("Experimental V1.2 Advanced total (unvalidated research preview)", expanded=False):
+    st.warning("2025-only training. NOT cross-season validated or approved for betting. "
+               "Original V1.2 / V1.3 predictions remain the production results.")
+    from research_2025_fitted_totals import experimental_total
+    research_frame = load_current_advanced()
+    research_frame = research_frame.loc[
+        (research_frame["gameId"].astype(str) == str(row["gameId"])) &
+        (research_frame["season"] == selected_season) &
+        (research_frame["week"] == selected_week)
+    ] if not research_frame.empty else pd.DataFrame()
+    if len(research_frame)==1:
+        try:
+            candidate_total = float(experimental_total(research_frame)[0])
+            st.metric("Experimental total", f"{candidate_total:.1f}",
+                      delta=f"{candidate_total-float(row['predictedTotal']):+.1f} vs frozen V1.2")
+            st.caption("Total-score experiment only; no separately calibrated spread, winner, "
+                       "ATS edge, moneyline, or validated win probability.")
+        except (ValueError, KeyError, TypeError) as exc:
+            st.error(f"Advanced research model unavailable: {exc}")
+    else:
+        st.info("No advanced research inputs available for this game.")
