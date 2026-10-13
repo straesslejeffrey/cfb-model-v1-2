@@ -34,8 +34,8 @@ def enrich(predictions: pd.DataFrame, snapshots: pd.DataFrame, min_coverage=.90)
         columns={"teamA":"homeTeam","teamB":"awayTeam"})
     # Snapshot generator uses case-sensitive provider team names; do not fuzzy join.
     merged=build_matchup_features(schedule,snapshots)
-    original=predictions.merge(merged.drop(columns=["season","week","homeTeam","awayTeam"]),
-        on="gameId",how="left",validate="one_to_one")
+    original=predictions.merge(merged.drop(columns=["week","homeTeam","awayTeam"]),
+        on=["season","gameId"],how="left",validate="one_to_one")
     evidence=[]
     for label,(off,defense) in PAIRINGS.items():
         for n in (3,5,10):
