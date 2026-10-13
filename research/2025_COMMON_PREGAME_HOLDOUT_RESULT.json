@@ -1,0 +1,11 @@
+{
+  "training_games": 411,
+  "tuning_games": 156,
+  "test_games": 185,
+  "selected_alpha": 1000,
+  "feature_count": 28,
+  "frozen_total_mae": 13.055643308013305,
+  "research_total_mae": 12.849842714462508,
+  "research_gain": 0.205800593550797,
+  "caveat": "One-season 2025 split; home-side-only pregame statistics; 2026 teamA/teamB orientation and cross-season portability not established; not deployable."
+}
