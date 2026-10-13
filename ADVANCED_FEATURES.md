@@ -60,3 +60,41 @@ observation counts, and home-minus-away differentials.
 8. Promote only if performance improves. Never overwrite frozen V1.2.
 
 Twitter/X visualizations are leads for metrics, not training data by themselves.
+
+## Stage 2: CFBD game-level ingest (implemented; not run with user credentials)
+
+Official endpoint documentation: https://api.collegefootballdata.com/api/stats
+
+Register and retrieve your private key from CFBD. On your computer, set
+`CFBD_API_KEY` as an environment variable; never put it into a GitHub file,
+Colab notebook cell shared publicly, or chat.
+
+```bash
+export CFBD_API_KEY='YOUR_PRIVATE_KEY'  # locally only
+python -m pip install -r requirements.txt
+python ingest_cfbd.py --start-year 2022 --end-year 2026
+python -m unittest test_advanced_features test_ingest_cfbd
+```
+
+The script requests game-specific advanced statistics and game-level havoc,
+normalizes the documented nested response, checks two reciprocal team rows per
+completed game, and writes three CSVs under ignored `local_advanced_data/`.
+The annual download may be limited by your subscription, API request quota,
+or missing games. It fails rather than filling missing opponents with invented
+statistics. If an FBS-vs-FCS game only supplies one team, additional ingestion
+rules will need to be developed using a reliable opponent record.
+
+**PPA IS NOT AUTOMATICALLY THE SAME AS EPA.** The ingest maps published PPA
+values into explicitly named `offPPA`, `rushPPA`, and similar fields.
+Explosiveness is similarly preserved as a provider-specific measure rather
+than misrepresented as a thresholded explosive-play *rate*.
+
+Not all requested X-style data is exposed in the documented game-level
+endpoint. Pressure, yards before contact, missed tackles, coverage shell,
+QB/injury availability, receiver yards per route and neutral situation pace
+require additional datasets and licensing/provenance checks. They remain
+missing; the pipeline does not hallucinate them.
+
+**Next gate:** run the download, inspect coverage reports for all FBS teams,
+bring in historical frozen V1.2 model-training artifacts, compare features,
+then retrain and backtest without leakage. The live Streamlit app remains unchanged.
