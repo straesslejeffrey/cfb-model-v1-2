@@ -21,6 +21,8 @@ on:
       - 'gate_historical_v12_baseline.py'
       - 'gate_advanced_totals_promotion.py'
       - 'test_gate_advanced_totals_promotion.py'
+      - 'research/train_2025_advanced_margin.py'
+      - 'test_train_2025_advanced_margin.py'
       - 'test_gate_historical_v12_baseline.py'
       - 'test_train_advanced_56feature.py'
       - 'test_align_advanced_feature_contract.py'
