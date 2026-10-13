@@ -11,14 +11,24 @@ def feature_contract():
             for metric in METRICS for window in (3,5)]
 
 def historical_features(frame):
-    names={f"{side}_pregame_{metric}_L{window}":
-           f"{side}_{metric}_last{window}"
-           for side,metric,window in feature_contract()}
-    missing=sorted(set(names)-set(frame))
-    if missing: raise ValueError(f"Missing historical features: {missing[:12]}")
+    """Use direct home/away values, or reconstruct away from audited home-minus-away deltas."""
     if not {"homeTeam","awayTeam","season","week"}.issubset(frame):
         raise ValueError("Missing historical game/team identities")
-    return frame[list(names)].rename(columns=names)
+    result=pd.DataFrame(index=frame.index)
+    for side,metric,window in feature_contract():
+        direct=f"{side}_pregame_{metric}_L{window}"
+        if direct in frame:
+            series=pd.to_numeric(frame[direct],errors="coerce")
+        elif side=="away":
+            home=f"home_pregame_{metric}_L{window}"
+            delta=f"gameDiff_{metric}_L{window}_homeMinusAway"
+            if home not in frame or delta not in frame:
+                raise ValueError(f"Cannot reconstruct historical away feature: {metric} L{window}")
+            series=pd.to_numeric(frame[home],errors="coerce")-pd.to_numeric(frame[delta],errors="coerce")
+        else:
+            raise ValueError(f"Historical pregame feature missing: {direct}")
+        result[f"{side}_{metric}_last{window}"]=series
+    return result
 
 def current_features(frame):
     needed={"teamA","teamB","season","week","homeTeam","awayTeam"}
