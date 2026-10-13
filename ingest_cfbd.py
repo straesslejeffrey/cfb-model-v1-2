@@ -127,6 +127,15 @@ def normalize_rows(advanced, havoc):
             raise ValueError("Inconsistent week on paired rows")
     if not set(ADV_FIELDS).intersection(result.columns):
         raise ValueError("Advanced endpoint did not yield mapped metrics")
+    # Never silently accept a schema change or a mostly empty metric.
+    core = ["offPPA", "defPPAAllowed", "offSuccessRate", "defSuccessRateAllowed"]
+    missing_core = [name for name in core if name not in result.columns]
+    if missing_core:
+        raise ValueError(f"Core advanced metrics absent: {missing_core}")
+    for name in core:
+        coverage = float(result[name].notna().mean())
+        if coverage < 0.90:
+            raise ValueError(f"Core metric {name} has only {coverage:.1%} coverage")
     return result.sort_values(["season", "week", "gameId", "team"]).reset_index(drop=True)
 
 def main():
@@ -149,6 +158,8 @@ def main():
         all_rows.append(normalized)
         print(f"{year}: {len(normalized)} completed team-game rows")
     games = pd.concat(all_rows, ignore_index=True)
+    if games.duplicated(["season", "gameId", "team"]).any():
+        raise ValueError("Duplicate game-team identities across years")
     # Import feature registry here to preserve separate PPA vs EPA names.
     from advanced_features import METRICS
     metric_names = list(ADV_FIELDS)+list(HAVOC_FIELDS)
