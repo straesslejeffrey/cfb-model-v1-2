@@ -11,8 +11,8 @@ class CFBDIngestionTests(unittest.TestCase):
             defense={"ppa":-0.1,"successRate":0.39,"lineYards":2.7})
         havoc = lambda team, opponent: dict(
             season=2026,week=1,gameId=101,team=team,opponent=opponent,
-            offense={"havoc":{"total":0.12}},
-            defense={"havoc":{"total":0.19,"frontSeven":0.1,"db":0.09}})
+            offense={"havocRate":0.12},
+            defense={"havocRate":0.19,"frontSevenHavocRate":0.1,"dbHavocRate":0.09})
         df = normalize_rows([base("A","B"),base("B","A")],
                             [havoc("A","B"),havoc("B","A")])
         self.assertEqual(len(df),2)
