@@ -6,6 +6,8 @@ on:
       - 'ingest_cfbd.py'
       - 'test_advanced_features.py'
       - 'test_ingest_cfbd.py'
+      - 'audit_archived_2025.py'
+      - 'test_audit_archived_2025.py'
       - '.github/workflows/advanced-feature-tests.yml'
   workflow_dispatch:
 
