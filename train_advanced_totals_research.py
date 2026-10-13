@@ -31,7 +31,7 @@ def symmetric_features(df, historical):
         for n in WINDOWS:
             if historical:
                 left=f"home_pregame_{metric}_L{n}"
-                right=f"away_pregame_{metric}_L{n}"
+                right=f"home_opp_pregame_{metric}_L{n}"
             else:
                 left=f"teamA_2026_{metric}_last{n}"
                 right=f"teamB_2026_{metric}_last{n}"
