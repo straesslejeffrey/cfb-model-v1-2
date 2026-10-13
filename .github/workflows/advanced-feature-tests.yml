@@ -25,6 +25,7 @@ on:
       - 'test_train_2025_advanced_margin.py'
       - 'test_streamlit_advanced_selector.py'
       - 'test_advanced_2026_release_audit.py'
+      - 'test_streamlit_live_smoke.py'
       - 'test_gate_historical_v12_baseline.py'
       - 'test_train_advanced_56feature.py'
       - 'test_align_advanced_feature_contract.py'
@@ -45,7 +46,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install requirements
-        run: python -m pip install pandas numpy scikit-learn joblib
+        run: python -m pip install -r requirements.txt scikit-learn joblib
       - name: Run offline schema and leakage tests
         run: python -m unittest discover -p 'test_*.py' -v
       - name: Check Streamlit research panel syntax
