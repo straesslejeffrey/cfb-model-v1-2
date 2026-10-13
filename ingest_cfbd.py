@@ -62,10 +62,10 @@ ADV_FIELDS = {
     "defPowerSuccessAllowed": ("defense", "powerSuccess"),
 }
 HAVOC_FIELDS = {
-    "havocAllowed": ("offense", "havoc", "total"),
-    "defHavocCreated": ("defense", "havoc", "total"),
-    "frontSevenHavoc": ("defense", "havoc", "frontSeven"),
-    "defensiveBackHavoc": ("defense", "havoc", "db"),
+    "havocAllowed": ("offense", "havocRate"),
+    "defHavocCreated": ("defense", "havocRate"),
+    "frontSevenHavoc": ("defense", "frontSevenHavocRate"),
+    "defensiveBackHavoc": ("defense", "dbHavocRate"),
 }
 
 def _nested(obj, path):
@@ -114,6 +114,8 @@ def normalize_rows(advanced, havoc):
                     existing[feature] = value
     if not rows:
         raise ValueError("No rows returned. Data unavailable or incorrect entitlement.")
+    if not advanced:
+        raise ValueError("Advanced stats are required; havoc-only rows are not sufficient.")
     result = pd.DataFrame(list(rows.values()))
     # Reject partial matchup records explicitly: the feature builder requires
     # reciprocal game rows and must not silently fabricate missing teams.
