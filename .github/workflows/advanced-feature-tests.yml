@@ -14,6 +14,8 @@ on:
       - 'bridge_v13_2026_pregame.py'
       - 'colab_advanced_bridge.py'
       - 'validate_2026_training_inputs.py'
+      - 'train_advanced_totals_research.py'
+      - 'test_train_advanced_totals_research.py'
       - 'test_validate_2026_training_inputs.py'
       - 'test_bridge_v13_2026_pregame.py'
       - 'test_enrich_v12_matchups.py'
@@ -29,7 +31,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install requirements
-        run: python -m pip install pandas numpy
+        run: python -m pip install pandas numpy scikit-learn joblib
       - name: Run offline schema and leakage tests
         run: python -m unittest discover -p 'test_*.py' -v
       - name: Check Streamlit research panel syntax
