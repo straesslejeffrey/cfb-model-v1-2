@@ -724,3 +724,75 @@ if (
         "Betting overlay is a model-vs-market comparison tool, "
         "not a guarantee of a winning wager."
     )
+
+
+# ==================================================================================================
+# ADVANCED MATCHUP EVIDENCE (2025 SEASON PRIORS, NOT CURRENT 2026 STATS)
+# Separate research view: never change the frozen score / margin calculations.
+# ==================================================================================================
+ADVANCED_PRIORS_PATH = APP_DIR / "research" / "2026_week7_advanced_preseason_matchups.csv"
+
+@st.cache_data(ttl=60)
+def load_advanced_priors():
+    if not ADVANCED_PRIORS_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(ADVANCED_PRIORS_PATH, low_memory=False)
+
+with st.expander("Advanced matchup research — 2025 season priors (not part of score prediction)", expanded=False):
+    st.caption(
+        "These are 2025 season-average offensive/defensive statistics attached to 2026 "
+        "games as preseason context. They are NOT Week 7 live form, and the V1.2 predicted "
+        "scores above do not incorporate them."
+    )
+    prior_data = load_advanced_priors()
+    prior_row = prior_data[
+        (pd.to_numeric(prior_data.get("season", pd.Series(dtype=float)), errors="coerce") == selected_season)
+        & (pd.to_numeric(prior_data.get("week", pd.Series(dtype=float)), errors="coerce") == selected_week)
+        & (prior_data.get("teamA", pd.Series(dtype=str)) == team_a)
+        & (prior_data.get("teamB", pd.Series(dtype=str)) == team_b)
+    ] if not prior_data.empty else pd.DataFrame()
+
+    if prior_row.empty:
+        st.info("No saved advanced preseason data for this matchup.")
+    else:
+        p = prior_row.iloc[0]
+        available_a = int(p.get("teamAAdvancedPriorAvailable", 0)) == 1
+        available_b = int(p.get("teamBAdvancedPriorAvailable", 0)) == 1
+        if not (available_a and available_b):
+            missing_teams = [name for name, ok in [(team_a, available_a), (team_b, available_b)] if not ok]
+            st.warning("Historical advanced statistics unavailable for: " + ", ".join(missing_teams))
+        else:
+            matchup_pairs = [
+                ("Overall PPA", "offPPA", "defPPAAllowed"),
+                ("Rushing success rate", "rushSuccessRate", "defRushSuccessRateAllowed"),
+                ("Passing success rate", "passSuccessRate", "defPassSuccessRateAllowed"),
+                ("Standard-down PPA", "standardDownPPA", None),
+                ("Passing-down PPA", "passingDownPPA", None),
+                ("Rushing PPA", "rushPPA", "defRushPPAAllowed"),
+                ("Passing PPA", "passPPA", "defPassPPAAllowed"),
+                ("Offensive line yards", "lineYards", "defLineYardsAllowed"),
+                ("Havoc", "havocAllowed", "defHavocCreated"),
+            ]
+            records = []
+            for label, offense, defense in matchup_pairs:
+                a = pd.to_numeric(p.get("teamA_" + offense), errors="coerce")
+                b = pd.to_numeric(p.get("teamB_" + offense), errors="coerce")
+                opp_b = pd.to_numeric(p.get("teamB_" + defense), errors="coerce") if defense else np.nan
+                opp_a = pd.to_numeric(p.get("teamA_" + defense), errors="coerce") if defense else np.nan
+                records.append({
+                    "Metric": label,
+                    f"{team_a} 2025 offense": a,
+                    f"{team_b} 2025 offense": b,
+                    f"{team_a} vs {team_b} defense": a - opp_b if defense else np.nan,
+                    f"{team_b} vs {team_a} defense": b - opp_a if defense else np.nan,
+                })
+            st.dataframe(
+                pd.DataFrame(records).round(3),
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.caption(
+                "The offense-minus-defense columns are raw descriptive differences, "
+                "NOT calibrated matchup advantages or point adjustments. "
+                "Their direction and importance depend on each statistic's definition."
+            )
