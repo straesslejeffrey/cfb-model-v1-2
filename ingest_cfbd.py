@@ -36,6 +36,14 @@ ADV_FIELDS = {
     "passingDownSuccess": ("offense", "passingDowns", "successRate"),
     "defStandardDownSuccessAllowed": ("defense", "standardDowns", "successRate"),
     "defPassingDownSuccessAllowed": ("defense", "passingDowns", "successRate"),
+    "rushSuccessRate": ("offense", "rushingPlays", "successRate"),
+    "passSuccessRate": ("offense", "passingPlays", "successRate"),
+    "defRushSuccessRateAllowed": ("defense", "rushingPlays", "successRate"),
+    "defPassSuccessRateAllowed": ("defense", "passingPlays", "successRate"),
+    "standardDownPPA": ("offense", "standardDowns", "ppa"),
+    "passingDownPPA": ("offense", "passingDowns", "ppa"),
+    "defStandardDownPPAAllowed": ("defense", "standardDowns", "ppa"),
+    "defPassingDownPPAAllowed": ("defense", "passingDowns", "ppa"),
     "rushExplosiveness": ("offense", "rushingPlays", "explosiveness"),
     "passExplosiveness": ("offense", "passingPlays", "explosiveness"),
     "defRushExplosivenessAllowed": ("defense", "rushingPlays", "explosiveness"),
@@ -45,12 +53,19 @@ ADV_FIELDS = {
     "stuffRateAllowed": ("offense", "stuffRate"),
     "defStuffRateCreated": ("defense", "stuffRate"),
     "powerSuccess": ("offense", "powerSuccess"),
+    "defExplosivenessAllowed": ("defense", "explosiveness"),
+    "offExplosiveness": ("offense", "explosiveness"),
+    "secondLevelYards": ("offense", "secondLevelYards"),
+    "defSecondLevelYardsAllowed": ("defense", "secondLevelYards"),
+    "openFieldYards": ("offense", "openFieldYards"),
+    "defOpenFieldYardsAllowed": ("defense", "openFieldYards"),
     "defPowerSuccessAllowed": ("defense", "powerSuccess"),
 }
 HAVOC_FIELDS = {
-    "havocAllowed": ("offense", "havocRate"),
-    "defHavocCreated": ("defense", "havocRate"),
-    "frontSevenHavoc": ("defense", "frontSevenHavocRate"),
+    "havocAllowed": ("offense", "havoc", "total"),
+    "defHavocCreated": ("defense", "havoc", "total"),
+    "frontSevenHavoc": ("defense", "havoc", "frontSeven"),
+    "defensiveBackHavoc": ("defense", "havoc", "db"),
 }
 
 def _nested(obj, path):
