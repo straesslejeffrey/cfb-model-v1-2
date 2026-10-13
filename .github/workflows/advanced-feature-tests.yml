@@ -4,6 +4,7 @@ on:
     paths:
       - 'advanced_features.py'
       - 'app.py'
+      - 'v1_2/data/advanced_2026_week7_research_inputs.csv'
       - 'research/2026_week7_advanced_preseason_matchups.csv'
       - 'ingest_cfbd.py'
       - 'test_advanced_features.py'
