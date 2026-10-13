@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 def evaluate(df, min_gain=0.10):
-    required={"gameId","season","week","actualTotal","frozenV12Total","advancedChallengerTotal"}
+    required={"gameId","season","week_base","actualTotal","frozenV12Total","advancedChallengerTotal"}
     if required-set(df.columns):
         raise ValueError("Missing fields: "+str(sorted(required-set(df.columns))))
     if df.duplicated(["season","gameId"]).any():raise ValueError("Duplicate games")
@@ -22,7 +22,7 @@ def evaluate(df, min_gain=0.10):
                     advancedRMSE=round(float(np.sqrt(np.mean(b*b))),6))
     overall=metrics(df)
     overall["passesMinimumImprovement"]=bool(overall["improvement"]>=min_gain)
-    by_week=[dict(week=int(w),**metrics(g)) for w,g in df.groupby("week",sort=True)]
+    by_week=[dict(week=int(w),**metrics(g)) for w,g in df.groupby("week_base",sort=True)]
     return dict(overall=overall,by_week=by_week,
                 caution="Historical 2025 evaluation; not prospective 2026 validation")
 if __name__=="__main__":
