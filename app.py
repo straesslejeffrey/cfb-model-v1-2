@@ -95,6 +95,13 @@ def load_betting_overlay():
 base = load_base_predictions()
 overlay = load_betting_overlay()
 
+# Explicit model selection: original scoring remains unchanged unless a candidate passes promotion.
+MODEL_OPTIONS = ["V1.2 (production)", "V1.2 Advanced (research preview)"]
+selected_model = st.sidebar.selectbox("Model", MODEL_OPTIONS, index=0)
+if selected_model == MODEL_OPTIONS[1]:
+    st.sidebar.warning("Research preview only: experimental total, original V1.2 spread and winner.")
+
+
 # ==================================================================================================
 # SIDEBAR FILTERS
 # ==================================================================================================
@@ -840,7 +847,7 @@ with st.expander("V1.2 Advanced | Verified 2026 team trends (research)", expande
         st.caption("Research view only: archived V1.2/V1.3 prediction outputs remain unchanged.")
 
 # 2025-trained research-only model output. Deliberately not a default score.
-with st.expander("Experimental V1.2 Advanced total (unvalidated research preview)", expanded=False):
+with st.expander("Experimental V1.2 Advanced total (unvalidated research preview)", expanded=selected_model == MODEL_OPTIONS[1]):
     st.warning("2025-only training. NOT cross-season validated or approved for betting. "
                "Original V1.2 / V1.3 predictions remain the production results.")
     from research_2025_fitted_totals import experimental_total
