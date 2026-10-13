@@ -21,6 +21,13 @@ class CFBDIngestionTests(unittest.TestCase):
         self.assertEqual(df.loc[df.team=="A","frontSevenHavoc"].iloc[0],0.1)
         self.assertNotIn("offEPA",df.columns)
 
+    def test_reject_sparse_core_metrics(self):
+        base = lambda team, opponent: dict(
+            season=2026, week=1, gameId=101, team=team, opponent=opponent,
+            offense={"ppa":0.15}, defense={"ppa":-0.05})
+        with self.assertRaisesRegex(ValueError, "Core advanced metrics absent"):
+            normalize_rows([base("A","B"),base("B","A")],[])
+
     def test_reject_missing_opponent(self):
         record = dict(season=2026,week=1,gameId=22,team="A",opponent="B",
                       offense={"ppa":0.3},defense={})
