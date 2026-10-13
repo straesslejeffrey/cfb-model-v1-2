@@ -1,0 +1,14 @@
+{
+  "train": 411,
+  "validation": 156,
+  "test": 185,
+  "feature_count": 56,
+  "selected_alpha": 1000,
+  "baseline_mae": 13.055643308013305,
+  "challenger_mae": 12.82682010467759,
+  "improvement": 0.2288232033357147,
+  "minimum_train_column_coverage": 0.8832116788321168,
+  "minimum_test_column_coverage": 1,
+  "status": "RESEARCH_ONLY_NOT_CROSS_SEASON_VALIDATED",
+  "method": "Reconstruct away=home-gameDiff using 2025 762-row backtest; chronological weeks <=8 train, 9-11 tune, 12-14 holdout; residual Ridge prediction of actualTotal-frozenV12Total; not trained on 2026."
+}

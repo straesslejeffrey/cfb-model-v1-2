@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .DS_Store
 .ipynb_checkpoints/
+
+# Keep local advanced datasets, credentials, and auth material out of git
+local_advanced_data/
+.env
+.env.*
+*.secret

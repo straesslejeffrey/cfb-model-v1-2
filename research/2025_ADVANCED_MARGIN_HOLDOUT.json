@@ -1,0 +1,14 @@
+{
+  "train_games": 411,
+  "tune_games": 156,
+  "holdout_games": 185,
+  "features": 57,
+  "alpha": 10000,
+  "baseline_margin_mae": 12.916132776297228,
+  "advanced_margin_mae": 12.895704158549425,
+  "improvement": 0.020428617747803912,
+  "baseline_winner_accuracy": 0.7351351351351352,
+  "advanced_winner_accuracy": 0.7351351351351352,
+  "status": "RESEARCH_ONLY_DO_NOT_PROMOTE",
+  "reason": "Gain below minimum 0.10 MAE and no change in winner accuracy; only 2025 evaluated"
+}

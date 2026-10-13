@@ -1,0 +1,7 @@
+rule,pass,value
+2025 Total MAE improvement >= 0.10,False,0.09019536776605541
+2025 Team-points MAE does not worsen,True,0.03776116080737957
+2025 RMSE improves,True,0.10438615364913062
+Bootstrap P(improvement > 0) >= 90%,True,1.0
+At least 2 of 3 temporal seasons improve,True,3.0
+Average temporal MAE improvement > 0,True,0.05027588165112847

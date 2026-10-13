@@ -1,0 +1,44 @@
+name: CFBD Advanced Data Snapshot
+on:
+  workflow_dispatch:
+    inputs:
+      start_year:
+        description: Earliest season (inclusive)
+        default: '2024'
+        required: true
+        type: string
+      end_year:
+        description: Latest season (inclusive)
+        default: '2025'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pandas numpy
+      - name: Require API credential
+        run: |
+          test -n "$CFBD_API_KEY" || { echo "Missing repository secret CFBD_API_KEY"; exit 1; }
+      - name: Download and calculate advanced features
+        run: |
+          python ingest_cfbd.py \
+            --start-year "${{ inputs.start_year }}" \
+            --end-year "${{ inputs.end_year }}" \
+            --output-dir local_advanced_data
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cfbd-advanced-data-${{ inputs.start_year }}-${{ inputs.end_year }}
+          path: local_advanced_data/*.csv
+          retention-days: 14

@@ -95,6 +95,13 @@ def load_betting_overlay():
 base = load_base_predictions()
 overlay = load_betting_overlay()
 
+# Explicit model selection: original scoring remains unchanged unless a candidate passes promotion.
+MODEL_OPTIONS = ["V1.2 (production)", "V1.2 Advanced (research preview)"]
+selected_model = st.sidebar.selectbox("Model", MODEL_OPTIONS, index=0)
+if selected_model == MODEL_OPTIONS[1]:
+    st.sidebar.warning("Research preview only: experimental total, original V1.2 spread and winner.")
+
+
 # ==================================================================================================
 # SIDEBAR FILTERS
 # ==================================================================================================
@@ -724,3 +731,140 @@ if (
         "Betting overlay is a model-vs-market comparison tool, "
         "not a guarantee of a winning wager."
     )
+
+
+# ==================================================================================================
+# ADVANCED MATCHUP EVIDENCE (2025 SEASON PRIORS, NOT CURRENT 2026 STATS)
+# Separate research view: never change the frozen score / margin calculations.
+# ==================================================================================================
+ADVANCED_PRIORS_PATH = APP_DIR / "research" / "2026_week7_advanced_preseason_matchups.csv"
+
+@st.cache_data(ttl=60)
+def load_advanced_priors():
+    if not ADVANCED_PRIORS_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(ADVANCED_PRIORS_PATH, low_memory=False)
+
+with st.expander("Advanced matchup research — 2025 season priors (not part of score prediction)", expanded=False):
+    st.caption(
+        "These are 2025 season-average offensive/defensive statistics attached to 2026 "
+        "games as preseason context. They are NOT Week 7 live form, and the V1.2 predicted "
+        "scores above do not incorporate them."
+    )
+    prior_data = load_advanced_priors()
+    prior_row = prior_data[
+        (pd.to_numeric(prior_data.get("season", pd.Series(dtype=float)), errors="coerce") == selected_season)
+        & (pd.to_numeric(prior_data.get("week", pd.Series(dtype=float)), errors="coerce") == selected_week)
+        & (prior_data.get("teamA", pd.Series(dtype=str)) == team_a)
+        & (prior_data.get("teamB", pd.Series(dtype=str)) == team_b)
+    ] if not prior_data.empty else pd.DataFrame()
+
+    if prior_row.empty:
+        st.info("No saved advanced preseason data for this matchup.")
+    else:
+        p = prior_row.iloc[0]
+        available_a = int(p.get("teamAAdvancedPriorAvailable", 0)) == 1
+        available_b = int(p.get("teamBAdvancedPriorAvailable", 0)) == 1
+        if not (available_a and available_b):
+            missing_teams = [name for name, ok in [(team_a, available_a), (team_b, available_b)] if not ok]
+            st.warning("Historical advanced statistics unavailable for: " + ", ".join(missing_teams))
+        else:
+            matchup_pairs = [
+                ("Overall PPA", "offPPA", "defPPAAllowed"),
+                ("Rushing success rate", "rushSuccessRate", "defRushSuccessRateAllowed"),
+                ("Passing success rate", "passSuccessRate", "defPassSuccessRateAllowed"),
+                ("Standard-down PPA", "standardDownPPA", None),
+                ("Passing-down PPA", "passingDownPPA", None),
+                ("Rushing PPA", "rushPPA", "defRushPPAAllowed"),
+                ("Passing PPA", "passPPA", "defPassPPAAllowed"),
+                ("Offensive line yards", "lineYards", "defLineYardsAllowed"),
+                ("Havoc", "havocAllowed", "defHavocCreated"),
+            ]
+            records = []
+            for label, offense, defense in matchup_pairs:
+                a = pd.to_numeric(p.get("teamA_" + offense), errors="coerce")
+                b = pd.to_numeric(p.get("teamB_" + offense), errors="coerce")
+                opp_b = pd.to_numeric(p.get("teamB_" + defense), errors="coerce") if defense else np.nan
+                opp_a = pd.to_numeric(p.get("teamA_" + defense), errors="coerce") if defense else np.nan
+                records.append({
+                    "Metric": label,
+                    f"{team_a} 2025 offense": a,
+                    f"{team_b} 2025 offense": b,
+                    f"{team_a} vs {team_b} defense": a - opp_b if defense else np.nan,
+                    f"{team_b} vs {team_a} defense": b - opp_a if defense else np.nan,
+                })
+            st.dataframe(
+                pd.DataFrame(records).round(3),
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.caption(
+                "The offense-minus-defense columns are raw descriptive differences, "
+                "NOT calibrated matchup advantages or point adjustments. "
+                "Their direction and importance depend on each statistic's definition."
+            )
+
+# --------------------------------------------------------------------------
+# V1.2 Advanced — current-season research evidence (not a trained score)
+# --------------------------------------------------------------------------
+CURRENT_ADVANCED_PATH = APP_DIR / "v1_2" / "data" / "advanced_2026_week7_research_inputs.csv"
+@st.cache_data(ttl=60)
+def load_current_advanced():
+    if not CURRENT_ADVANCED_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(CURRENT_ADVANCED_PATH, low_memory=False)
+
+with st.expander("V1.2 Advanced | Verified 2026 team trends (research)", expanded=False):
+    st.caption("Current 2026 prior games: last 3 and last 5 completed games. "
+               "These metrics are NOT yet used to modify V1.2 score predictions.")
+    advanced = load_current_advanced()
+    selected = advanced.loc[
+        (advanced["gameId"].astype(str) == str(row["gameId"])) &
+        (advanced["season"] == selected_season) &
+        (advanced["week"] == selected_week)
+    ] if not advanced.empty else pd.DataFrame()
+    if len(selected) != 1:
+        st.info("Current-season advanced statistics unavailable for this game.")
+    else:
+        ar = selected.iloc[0]
+        metrics = [
+            ("Points per drive", "offPointsPerDrive"),
+            ("PPA per play", "offPPAperPlay"),
+            ("Success rate", "offSuccessRate"),
+            ("Scoring opportunity rate", "offScoringOpportunityRate"),
+            ("Explosive drive rate", "offExplosiveDriveRate"),
+            ("Defensive PPA allowed", "defPPAperPlayAllowed"),
+            ("Defensive success allowed", "defSuccessRateAllowed"),
+        ]
+        view = []
+        for label, metric in metrics:
+            rec = {"Measure": label}
+            for side, team in [("teamA",team_a),("teamB",team_b)]:
+                rec[f"{team} L3"] = ar.get(f"{side}_2026_{metric}_last3")
+                rec[f"{team} L5"] = ar.get(f"{side}_2026_{metric}_last5")
+            view.append(rec)
+        st.dataframe(pd.DataFrame(view).round(3), hide_index=True, use_container_width=True)
+        st.caption("Research view only: archived V1.2/V1.3 prediction outputs remain unchanged.")
+
+# 2025-trained research-only model output. Deliberately not a default score.
+with st.expander("Experimental V1.2 Advanced total (unvalidated research preview)", expanded=selected_model == MODEL_OPTIONS[1]):
+    st.warning("2025-only training. NOT cross-season validated or approved for betting. "
+               "Original V1.2 / V1.3 predictions remain the production results.")
+    from research_2025_fitted_totals import experimental_total
+    research_frame = load_current_advanced()
+    research_frame = research_frame.loc[
+        (research_frame["gameId"].astype(str) == str(row["gameId"])) &
+        (research_frame["season"] == selected_season) &
+        (research_frame["week"] == selected_week)
+    ] if not research_frame.empty else pd.DataFrame()
+    if len(research_frame)==1:
+        try:
+            candidate_total = float(experimental_total(research_frame)[0])
+            st.metric("Experimental total", f"{candidate_total:.1f}",
+                      delta=f"{candidate_total-float(row['predictedTotal']):+.1f} vs frozen V1.2")
+            st.caption("Total-score experiment only; no separately calibrated spread, winner, "
+                       "ATS edge, moneyline, or validated win probability.")
+        except (ValueError, KeyError, TypeError) as exc:
+            st.error(f"Advanced research model unavailable: {exc}")
+    else:
+        st.info("No advanced research inputs available for this game.")
