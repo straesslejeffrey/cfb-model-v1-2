@@ -75,8 +75,22 @@ if __name__=="__main__":
     p=argparse.ArgumentParser()
     p.add_argument("--historical",required=True)
     p.add_argument("--current",required=True)
+    p.add_argument("--schedule",required=True,help="Verified 2026 schedule CSV with season,gameId,homeTeam,awayTeam")
     p.add_argument("--output",required=True)
     a=p.parse_args()
     h=pd.read_parquet(a.historical) if a.historical.endswith(".parquet") else pd.read_csv(a.historical)
     c=pd.read_csv(a.current)
+    schedule=pd.read_csv(a.schedule)
+    keys=["season","gameId"]
+    needed=set(keys+["homeTeam","awayTeam"])
+    if not needed.issubset(schedule):
+        raise ValueError("Verified 2026 home/away schedule fields missing")
+    if schedule.duplicated(keys).any():
+        raise ValueError("Duplicate verified 2026 schedule game IDs")
+    for key in keys:
+        c[key]=pd.to_numeric(c[key],errors="raise")
+        schedule[key]=pd.to_numeric(schedule[key],errors="raise")
+    c=c.merge(schedule[keys+["homeTeam","awayTeam"]],on=keys,how="left",validate="one_to_one")
+    if c[["homeTeam","awayTeam"]].isna().any().any():
+        raise ValueError("Missing verified home-away game orientation")
     train(h,c,a.output)
