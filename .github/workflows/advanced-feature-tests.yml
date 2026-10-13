@@ -8,6 +8,8 @@ on:
       - 'test_ingest_cfbd.py'
       - 'audit_archived_2025.py'
       - 'test_audit_archived_2025.py'
+      - 'enrich_v12_matchups.py'
+      - 'test_enrich_v12_matchups.py'
       - '.github/workflows/advanced-feature-tests.yml'
   workflow_dispatch:
 
