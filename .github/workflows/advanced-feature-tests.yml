@@ -24,6 +24,7 @@ on:
       - 'research/train_2025_advanced_margin.py'
       - 'test_train_2025_advanced_margin.py'
       - 'test_streamlit_advanced_selector.py'
+      - 'test_advanced_2026_release_audit.py'
       - 'test_gate_historical_v12_baseline.py'
       - 'test_train_advanced_56feature.py'
       - 'test_align_advanced_feature_contract.py'
