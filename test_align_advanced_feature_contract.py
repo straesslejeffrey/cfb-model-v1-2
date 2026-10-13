@@ -26,4 +26,13 @@ class FeatureContractTests(unittest.TestCase):
    history[f"{side}_pregame_{metric}_L{window}"]=3.
   result=historical_features(pd.DataFrame([history]))
   self.assertEqual(len(result.columns),56)
+ def test_historical_away_reconstruction(self):
+  history={"homeTeam":"Host","awayTeam":"Visitor","season":2025,"week":7}
+  for side,metric,window in feature_contract():
+   if side=="home":
+    history[f"home_pregame_{metric}_L{window}"]=5.
+    history[f"gameDiff_{metric}_L{window}_homeMinusAway"]=3.
+  result=historical_features(pd.DataFrame([history]))
+  self.assertEqual(result["away_offSuccessRate_last3"].iloc[0],2.)
+  self.assertEqual(len(result.columns),56)
 if __name__=="__main__":unittest.main()
