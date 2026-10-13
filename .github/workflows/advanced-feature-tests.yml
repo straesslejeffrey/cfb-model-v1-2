@@ -11,6 +11,8 @@ on:
       - 'audit_archived_2025.py'
       - 'test_audit_archived_2025.py'
       - 'enrich_v12_matchups.py'
+      - 'bridge_v13_2026_pregame.py'
+      - 'test_bridge_v13_2026_pregame.py'
       - 'test_enrich_v12_matchups.py'
       - '.github/workflows/advanced-feature-tests.yml'
   workflow_dispatch:
