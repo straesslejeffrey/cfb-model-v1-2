@@ -14,6 +14,8 @@ on:
       - 'bridge_v13_2026_pregame.py'
       - 'colab_advanced_bridge.py'
       - 'validate_2026_training_inputs.py'
+      - 'align_advanced_feature_contract.py'
+      - 'test_align_advanced_feature_contract.py'
       - 'train_advanced_totals_research.py'
       - 'test_train_advanced_totals_research.py'
       - 'test_validate_2026_training_inputs.py'
