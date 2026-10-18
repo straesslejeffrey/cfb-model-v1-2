@@ -16,7 +16,7 @@ st.set_page_config(
 st.title("CFB Model V1.2")
 
 st.caption(
-    "Frozen V1.2 production predictions with Week 7 betting calibration overlay"
+    "Frozen V1.2 production predictions with weekly betting calibration overlay"
 )
 
 # ==================================================================================================
@@ -36,7 +36,7 @@ OVERLAY_DATA_PATH = (
     APP_DIR /
     "v1_2" /
     "data" /
-    "streamlit_betting_overlay_week7.csv"
+    "streamlit_betting_overlay_2026.csv"
 )
 
 # ==================================================================================================
